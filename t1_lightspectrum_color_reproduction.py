@@ -27,26 +27,19 @@ xyz_to_rgb = np.array([
     [-0.51483, 1.42523, 0.08817],
     [0.00520, -0.01440, 1.00921]
 ])
-visible_light_df[['nm', 'x bar', 'y bar', 'z bar']].head(1)
-xyz = visible_light_df[['x bar', 'y bar', 'z bar']].to_numpy(dtype=np.float32)
-l = visible_light_df["V'(l)"].to_numpy(dtype=np.float32)
+xyzbar = visible_light_df[['x bar', 'y bar', 'z bar']].to_numpy(
+    dtype=np.float32)
+xyzbar.shape
+radiance = visible_light_df["VM(l)"].to_numpy(dtype=np.float32)
+radiance.shape
 cieA = visible_light_df["CIE A"].to_numpy(dtype=np.float32)
-XYZ = xyz.T.dot(cieA)
+
+XYZ = xyzbar.T.dot(radiance)
 XYZ = XYZ/XYZ[1]
 XYZ
 
+xyz = XYZ / XYZ.sum()
+print(xyz)
 
-x = XYZ[0]/XYZ.sum()
-y = XYZ[1]/XYZ.sum()
-z = XYZ[2]/XYZ.sum()
-
-rgb = xyz_to_rgb.dot(cieD65XYZ)
-rgb[:, 0]
-
-fig = plt.figure()
-ax = fig.gca(projection='3d')
-ax.scatter3D(
-    colors[:, 0], colors[:, 1], colors[:, 2],
-    facecolors=rgb, edgecolors=np.clip(2*colors - 0.5, 0, 1),
-    linewidt=0.5)
-ax.set(xlabel='r', ylabel='g', zlabel='b')
+rgb = xyz_to_rgb.dot(xyz)
+print(rgb)
