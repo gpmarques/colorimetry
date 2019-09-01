@@ -23,19 +23,16 @@ visible_light_df.plot(kind="line", x="nm", y="V'(l)", ax=ax)
 
 
 xyz_to_rgb = np.array([
-    [2.0413690, -0.5649464, -0.3446944],
-    [-0.9692660, 1.8760108, 0.0415560],
-    [0.0134474, -0.1183897, 1.0154096]
+    [3.240710, -1.537260, -0.498571],
+    [-0.969258, 1.875990, 0.041556],
+    [0.055635, -0.203996, 1.057070]
 ])
+
+cieD65 = visible_light_df["CIE D65"].to_numpy(dtype=np.float32)
 xyzbar = visible_light_df[['x bar', 'y bar', 'z bar']].to_numpy(
     dtype=np.float32)
 xyzbar.shape
-xyzbar
-cieA = visible_light_df["CIE A"].to_numpy(dtype=np.float32)
-cieD65 = visible_light_df["CIE D65"].to_numpy(dtype=np.float32)
-#  normalize
-cieD65 = (cieD65 - cieD65.min()) / (cieD65.max() - cieD65.min())
-cieD65.shape
+xyzbar[0, :]
 
 spectra_df = pd.read_excel(
     "ColorChecker_RGB_and_spectra.xls",
@@ -45,12 +42,17 @@ spectra_df.tail(1)
 spectral_data = spectra_df.loc[:, spectra_df.columns[2:]].to_numpy(
     dtype=np.float32)
 spectral_data.shape
-wavelengths_index = [i for i in range(0, 360, 10)]
-LB = (cieD65[wavelengths_index] * spectral_data).T
-XYZ = xyzbar[wavelengths_index].T.dot(LB)
-XYZ = XYZ / XYZ[1]
-XYZ.shape
-rgb = xyz_to_rgb.dot(XYZ)
-rgb.shape
-y, x = np.array([(i, j) for i in range(4) for j in range(6)]).T
-plt.scatter(x, y, c=np.clip(rgb, 0, 1).T, s=1500)
+
+
+def spectral_to_rgb(spectral_data, illuminant, xyz_to_rgb):
+    wavelengths_index = [i for i in range(0, 360, 10)]
+    LB = (illuminant[wavelengths_index] * spectral_data).T
+    XYZ = xyzbar[wavelengths_index].T.dot(LB)
+    k = illuminant[wavelengths_index].dot(xyzbar[wavelengths_index, 1])
+    XYZ = XYZ / k
+    rgb = xyz_to_rgb.dot(XYZ)
+    y, x = np.array([(i, j) for i in range(4) for j in range(6)]).T
+    plt.scatter(x, y, c=np.clip(rgb, 0, 1).T, s=1500)
+
+
+spectral_to_rgb(spectral_data, cieD65, xyz_to_rgb)
