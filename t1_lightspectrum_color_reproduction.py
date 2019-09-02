@@ -44,15 +44,22 @@ spectral_data = spectra_df.loc[:, spectra_df.columns[2:]].to_numpy(
 spectral_data.shape
 
 
-def spectral_to_rgb(spectral_data, illuminant, xyz_to_rgb):
+def spectral_to_rgb(spectral_data, illuminant, xyz_to_rgb, gamma=True):
     wavelengths_index = [i for i in range(0, 360, 10)]
     LB = (illuminant[wavelengths_index] * spectral_data).T
     XYZ = xyzbar[wavelengths_index].T.dot(LB)
     k = illuminant[wavelengths_index].dot(xyzbar[wavelengths_index, 1])
     XYZ = XYZ / k
     rgb = xyz_to_rgb.dot(XYZ)
+    if gamma:
+        rgb[rgb < -0.0031308] = -(1.055*(-rgb[rgb < -0.0031308])**(1/2.4)-0.055)
+        rgb[(rgb >= -0.0031308) & (rgb < 0)] = rgb[(rgb >= -0.0031308) & (rgb < 0)]*12.92
+        rgb[rgb > 0.0031308] = 1.055*rgb[rgb > 0.0031308]**(1/2.4) - 0.055
+        rgb[(rgb <= 0.0031308) & (rgb > 0)] = rgb[(rgb <= 0.0031308) & (rgb > 0)]*12.92
     y, x = np.array([(i, j) for i in range(4) for j in range(6)]).T
     plt.scatter(x, y, c=np.clip(rgb, 0, 1).T, s=1500)
 
 
 spectral_to_rgb(spectral_data, cieD65, xyz_to_rgb)
+
+spectral_to_rgb(spectral_data, cieD65, xyz_to_rgb, gamma=False)
